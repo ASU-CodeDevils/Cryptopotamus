@@ -71,7 +71,7 @@ This will set the current local branch to track the remote repo origin (your for
 
 * Open up the [main repo](https://github.com/asu-codedevils/cryptopotamus) and click on the "Pull Requests" tab near the top of the screen. Click on "New pull request" and then click the link that says "compare across forks". On the left side just below that, you should have `base fork: ASU-CodeDevils/Cryptopotamus` `base: master` and on the right you should click on the dropdowns and select your fork (labelled `<your username>/cryptopotamus`) and then the correct branch that you made modifications to.
 
-* Now make a title and for your PR and describe the changes you made, then create the PR. Yay! Now just wait for feedback/review and hopefully your changes will be merged.
+* Now make a title and for your PR and describe the changes you made, then create the PR. On the top right, add anyone as a reviewer that would be relevant/has worked on similar parts of the code that you would like review from. Yay! Now just wait for feedback/review and hopefully your changes will be merged.
 
 ## Rebasing Changes
 
