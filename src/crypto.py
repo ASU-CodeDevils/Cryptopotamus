@@ -1,5 +1,7 @@
 ''' Crypto workings here '''
 
-import sys
-import socket
-import select
+from cryptography import *
+
+class Potamus:
+    def __init__(self):
+        
