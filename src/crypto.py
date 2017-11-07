@@ -124,12 +124,12 @@ class Potamus(object):
         return unpadded
 
 
-class MultiFernet(object):
+class MultiPotamus(object):
     def __init__(self, fernets):
         fernets = list(fernets)
         if not fernets:
             raise ValueError(
-                "MultiFernet requires at least one Potamus instance"
+                "MultiPotamus requires at least one Potamus instance"
             )
         self._fernets = fernets
 

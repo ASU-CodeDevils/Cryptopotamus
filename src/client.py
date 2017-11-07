@@ -2,28 +2,50 @@
 
 from clientgui import *
 from crypto import *
+from socket import *
+
 
 class Client:
-    app = None
-    f = None
+        crypto = Potamus
+        sockobj = socket
 
-    def quit(self):
-        exit()
+        def quit(self):
+            self.sockobj.close()
+            exit()
 
+        def send(self, message):
+            bytecode = str.encode(message)
+            ciphertext = self.crypto.encrypt(bytecode)
+            self.sockobj.send(ciphertext)
 
-    def send(self, message=None):
-        bytecode = str.encode(message)
-        key = Potamus.generate_key()
-        f = Potamus(key)
-        ciphertext = f.encrypt(bytecode)
-        self.app.showcipher(ciphertext)
+        def gui_login_window(self):
+            root = Tk()
+            login = LoginFrame(root, self)
+            root.mainloop()
 
+        def gui_message_window(self):
+            root = Tk()
+            mw = MessageFrame(root, self)
 
-    def main(self):
-        root = Tk()
-        root.geometry("400x150")
-        self.app = MessageWindow(root, self)
-        root.mainloop()
+        def login(self, username, password):
+            self.send(username)
+            self.send(password)
+            self.gui_message_window()
+
+        def init_crypt(self):
+            key = Potamus.generate_key()
+            self.crypto = Potamus(key)
+
+        def init_sockets(self):
+            serverloc = 'localhost'
+            port = 50007
+            self.sockobj = socket(AF_INET6, SOCK_STREAM)
+            self.sockobj.connect((serverloc, port))
+
+        def main(self):
+            self.init_crypt()
+            self.init_sockets()
+            self.gui_login_window()
 
 
 if __name__ == "__main__":
