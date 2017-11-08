@@ -19,6 +19,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.hmac import HMAC
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 class InvalidToken(Exception):
@@ -143,3 +144,8 @@ class MultiPotamus(object):
             except InvalidToken:
                 pass
         raise InvalidToken
+
+class AsyPotamus(object):
+    def genkeys(self):
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
+        public_key = b"test"

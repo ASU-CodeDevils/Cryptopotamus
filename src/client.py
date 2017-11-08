@@ -9,6 +9,11 @@ class Client:
         crypto = Potamus
         sockobj = socket
 
+        def __init__(self):
+            self.init_crypt()
+            self.init_sockets()
+            self.gui_login_window()
+
         def quit(self):
             self.sockobj.close()
             exit()
@@ -41,12 +46,8 @@ class Client:
             port = 50007
             self.sockobj = socket(AF_INET6, SOCK_STREAM)
             self.sockobj.connect((serverloc, port))
-
-        def main(self):
-            self.init_crypt()
-            self.init_sockets()
-            self.gui_login_window()
+            self.sockobj.send(b"HelloClient")
 
 
 if __name__ == "__main__":
-    Client().main()
+    Client()
