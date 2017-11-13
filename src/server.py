@@ -6,8 +6,9 @@ import re
 from crypto import *
 from helper import State
 from cryptography.hazmat.primitives.asymmetric import padding
+import ssl
 
-
+"""
 class ClientHandler(socketserver.BaseRequestHandler):
     state = 0
     sym = Potamus
@@ -68,16 +69,40 @@ class ClientHandler(socketserver.BaseRequestHandler):
                 else:
                     self.send(b'LoginFailure')
             return True
+   """
+
+
+class StreamHandler(socketserver.StreamRequestHandler):
+    def handle(self):
+        data = self.connection.recv(4096)
+        self.wfile.write(data)
 
 
 class Server(socketserver.ThreadingTCPServer):
     srvhost = ''
     srvport = 49374
 
-    def __init__(self):
+    def __init__(self,
+                 request_handler_class=StreamHandler,
+                 certfile="../helper/cert.pem",
+                 keyfile="../helper/key.pem",
+                 ssl_version=ssl.PROTOCOL_TLSv1_2,
+                 bind_and_activate=True):
         self.address_family = socket.AF_INET6
-        addr = (self.srvhost, self.srvport)
-        super(Server, self).__init__(addr, ClientHandler)
+        self.certfile = certfile
+        self.keyfile = keyfile
+        self.ssl_version = ssl_version
+        server_address = (self.srvhost, self.srvport)
+        super(Server, self).__init__(server_address, request_handler_class, bind_and_activate)
+
+    def get_request(self):
+        newsocket, fromaddr = self.socket.accept()
+        connstream = ssl.wrap_socket(newsocket,
+                                     server_side=True,
+                                     certfile=self.certfile,
+                                     keyfile=self.keyfile,
+                                     ssl_version=self.ssl_version)
+        return connstream, fromaddr
 
     def log(self, message):
         print(message)

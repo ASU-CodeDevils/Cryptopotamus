@@ -3,7 +3,5 @@ import pickle
 import server
 import client
 
-server = server.Server()
-server.serve_forever()
-
-client.Client()
+certwriter = crypto.AsyPotamus()
+certwriter.write_key_and_cert("../helper/cert.pem", "../helper/key.pem")

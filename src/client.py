@@ -6,6 +6,7 @@ from socket import *
 import threading
 from helper import State
 from cryptography.hazmat.primitives.asymmetric import padding
+import ssl
 
 
 class Client(object):
@@ -28,7 +29,8 @@ class Client(object):
     def init_sock(self):
         host = 'localhost'
         port = 49374
-        self.servsock = socket(AF_INET6, SOCK_STREAM)
+        baresock = socket(AF_INET6, SOCK_STREAM)
+        self.servsock = ssl.wrap_socket(baresock, cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2)
         try:
             self.servsock.connect((host, port))
             print("Connection Successful")  # MARKER
@@ -38,13 +40,16 @@ class Client(object):
         except InterruptedError:
             print("Connection Interrupted")  # MARKER
             return
+        except:
+            print("well shit")
         threading.Thread(target=self.listen_loop).start()
         self.handshake()  # Move this?
 
     def listen_loop(self):
         while True:
             data = self.servsock.recv(1024)
-            if not data: break
+            if not data:
+                break
             print("Received: ", data)  # MARKER
             self.parse(data)
         self.servsock.close()
