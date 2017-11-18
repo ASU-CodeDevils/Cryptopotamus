@@ -30,7 +30,8 @@ class Client(object):
         host = 'localhost'
         port = 49374
         baresock = socket(AF_INET6, SOCK_STREAM)
-        self.servsock = ssl.wrap_socket(baresock, cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2)
+        context = ssl.create_default_context()
+        self.servsock = context.wrap_socket(baresock, cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2, verify=False)
         try:
             self.servsock.connect((host, port))
             print("Connection Successful")  # MARKER
@@ -40,8 +41,6 @@ class Client(object):
         except InterruptedError:
             print("Connection Interrupted")  # MARKER
             return
-        except:
-            print("well shit")
         threading.Thread(target=self.listen_loop).start()
         self.handshake()  # Move this?
 

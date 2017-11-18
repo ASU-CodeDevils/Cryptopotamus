@@ -24,6 +24,8 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import serialization
 import datetime
+
+
 # as pad
 
 
@@ -181,4 +183,5 @@ class AsyPotamus(object):
         with open(keyname, "wb") as f:
             f.write(self.private_key.private_bytes(encoding=serialization.Encoding.PEM,
                                                    format=serialization.PrivateFormat.TraditionalOpenSSL,
-                                                   encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"),))
+                                                   encryption_algorithm=serialization.BestAvailableEncryption(
+                                                       b"passphrase"),),)
