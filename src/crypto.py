@@ -184,4 +184,8 @@ class AsyPotamus(object):
             f.write(self.private_key.private_bytes(encoding=serialization.Encoding.PEM,
                                                    format=serialization.PrivateFormat.TraditionalOpenSSL,
                                                    encryption_algorithm=serialization.BestAvailableEncryption(
-                                                       b"passphrase"),),)
+                                                       b"cryptopotamus"),),)
+
+
+#certwriter = AsyPotamus()
+#certwriter.write_key_and_cert("../helper/cert.pem", "../helper/key.pem")
