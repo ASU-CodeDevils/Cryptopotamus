@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Room
 
 
-@login_required
+
 def index(request):
     """
     Root page view. This is essentially a single-page app, if you ignore the

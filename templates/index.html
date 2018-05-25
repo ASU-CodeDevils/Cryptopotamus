@@ -21,6 +21,115 @@
 
 {% block extra_body %}
     <script>
+    //First attempt at encryption on the ends.
+    function setuser(){
+      sessionStorage.setItem('uname', document.getElementById("uname").value);
+    }
+    function setencrypt(){
+      sessionStorage.setItem('encrypt', document.getElementById("encrypt").value);
+    }
+    function encrypt(socket, info){
+      var key = info.encrypt;
+      delete info.encrypt;
+      var sp = key.length % 2;
+      if(sp == 0){
+        sp = 2;
+      }
+      var total = 0;
+      for(var x=0;x<key.length;x++){
+        total += key.charCodeAt(x);
+      }
+      var forencrypt = info.message.split("");
+      var aftencrypt = [];
+      for (x of forencrypt){
+        if(sp==1){
+          aftencrypt.push(Math.floor(Math.random() * Math.floor(65556)))
+        } else {
+          aftencrypt.push(Math.floor(Math.random() * Math.floor(65556)))
+          aftencrypt.push(Math.floor(Math.random() * Math.floor(65556)))
+        }
+        aftencrypt.push(x.charCodeAt(0) + total)
+      }
+      info.message = aftencrypt;
+      socket.send(JSON.stringify(info));
+      console.log(aftencrypt)
+    }
+    function decrypt(data){
+      var key = sessionStorage.getItem('encrypt');
+      if(key == undefined){
+        key = 'oops';
+      }
+      var sp = key.length % 2;
+      if(sp == 0){
+        sp = 2;
+      }
+      var total = 0;
+      for(var x=0;x<key.length;x++){
+        total += key.charCodeAt(x);
+      }
+      var forencrypt = data.message;
+      var aftencrypt = '';
+      var count = sp;
+      for (x of forencrypt){
+        if(count>0){
+          count -=1;
+        } else {
+          count = sp;
+          aftencrypt += String.fromCharCode(x - total);
+        }
+      }
+      console.log(aftencrypt);
+      data.message = aftencrypt;
+      update(data);
+    }
+    function update(data){
+      var msgdiv = $("#room-" + data.room + " .messages");
+      var ok_msg = "";
+      // msg types are defined in chat/settings.py
+      // Only for demo purposes is hardcoded, in production scenarios, consider call a service.
+      switch (data.msg_type) {
+          case 0:
+              // Message
+              ok_msg = "<div class='message'>" +
+                      "<span class='username'>" + data.username + "</span>" +
+                      "<span class='body'>" + data.message + "</span>" +
+                      "</div>";
+              break;
+          case 1:
+              // Warning / Advice messages
+              ok_msg = "<div class='contextual-message text-warning'>" + data.message +
+                      "</div>";
+              break;
+          case 2:
+              // Alert / Danger messages
+              ok_msg = "<div class='contextual-message text-danger'>" + data.message +
+                      "</div>";
+              break;
+          case 3:
+              // "Muted" messages
+              ok_msg = "<div class='contextual-message text-muted'>" + data.message +
+                      "</div>";
+              break;
+          case 4:
+              // User joined room
+              ok_msg = "<div class='contextual-message text-muted'>" + data.username +
+                      " joined the room!" +
+                      "</div>";
+              break;
+          case 5:
+              // User left room
+              ok_msg = "<div class='contextual-message text-muted'>" + data.username +
+                      " left the room!" +
+                      "</div>";
+              break;
+          default:
+              console.log("Unsupported message type!");
+              return;
+      }
+      msgdiv.append(ok_msg);
+
+      msgdiv.scrollTop(msgdiv.prop("scrollHeight"));
+    }
         $(function () {
             // Correctly decide between ws:// and wss://
             var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
@@ -33,6 +142,15 @@
                 // Decode the JSON
                 console.log("Got websocket message " + message.data);
                 var data = JSON.parse(message.data);
+                var key = sessionStorage.getItem('encrypt');
+                var user = sessionStorage.getItem('uname');
+                if(key == undefined){
+                  key = '';
+                }
+                if(user == undefined){
+                  user = '';
+                }
+
                 // Handle errors
                 if (data.error) {
                     alert(data.error);
@@ -45,17 +163,24 @@
                             "<div class='room' id='room-" + data.join + "'>" +
                             "<h2>" + data.title + "</h2>" +
                             "<div class='messages'></div>" +
-                            "<form><input><button>Send</button></form>" +
+                            "<form><input id=\"send\"><button>Send</button></form>" +
+                            "<br><label>Username<input id=\"uname\" onchange=\"setuser()\" value="+ user + "></label>" +
+                            "<br><label>Encryption<input id=\"encrypt\" onchange=\"setencrypt()\" value=" + key + "></label>" +
                             "</div>"
                     );
                     // Hook up send button to send a message
                     roomdiv.find("form").on("submit", function () {
-                        socket.send(JSON.stringify({
+                        var info = {
                             "command": "send",
                             "room": data.join,
-                            "message": roomdiv.find("input").val()
-                        }));
+                            "message": roomdiv.find("#send").val(),
+                            "username": roomdiv.find("#uname").val(),
+                            "encrypt": roomdiv.find("#encrypt").val()
+                        };
+                        encrypt(socket, info);
                         roomdiv.find("input").val("");
+                        roomdiv.find("#uname").val(sessionStorage.getItem("uname"));
+                        roomdiv.find("#encrypt").val(sessionStorage.getItem("encrypt"));
                         return false;
                     });
                     $("#chats").append(roomdiv);
@@ -65,52 +190,7 @@
                     $("#room-" + data.leave).remove();
                     // Handle getting a message
                 } else if (data.message || data.msg_type != 0) {
-                    var msgdiv = $("#room-" + data.room + " .messages");
-                    var ok_msg = "";
-                    // msg types are defined in chat/settings.py
-                    // Only for demo purposes is hardcoded, in production scenarios, consider call a service.
-                    switch (data.msg_type) {
-                        case 0:
-                            // Message
-                            ok_msg = "<div class='message'>" +
-                                    "<span class='username'>" + data.username + "</span>" +
-                                    "<span class='body'>" + data.message + "</span>" +
-                                    "</div>";
-                            break;
-                        case 1:
-                            // Warning / Advice messages
-                            ok_msg = "<div class='contextual-message text-warning'>" + data.message +
-                                    "</div>";
-                            break;
-                        case 2:
-                            // Alert / Danger messages
-                            ok_msg = "<div class='contextual-message text-danger'>" + data.message +
-                                    "</div>";
-                            break;
-                        case 3:
-                            // "Muted" messages
-                            ok_msg = "<div class='contextual-message text-muted'>" + data.message +
-                                    "</div>";
-                            break;
-                        case 4:
-                            // User joined room
-                            ok_msg = "<div class='contextual-message text-muted'>" + data.username +
-                                    " joined the room!" +
-                                    "</div>";
-                            break;
-                        case 5:
-                            // User left room
-                            ok_msg = "<div class='contextual-message text-muted'>" + data.username +
-                                    " left the room!" +
-                                    "</div>";
-                            break;
-                        default:
-                            console.log("Unsupported message type!");
-                            return;
-                    }
-                    msgdiv.append(ok_msg);
-
-                    msgdiv.scrollTop(msgdiv.prop("scrollHeight"));
+                    decrypt(data);
                 } else {
                     console.log("Cannot handle message!");
                 }
