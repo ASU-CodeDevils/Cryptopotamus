@@ -19,18 +19,32 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ##### Channels-specific settings
 
 redis_host = os.environ.get('REDIS_HOST', 'localhost')
-
+redis_pass = os.environ.get('REDIS_PASS', None)
+redis_port = os.environ.get('REDIS_PORT', 6379)
+redis_db = os.environ.get('REDIS_DB', None)
 # Channel layer definitions
 # http://channels.readthedocs.io/en/latest/topics/channel_layers.html
-CHANNEL_LAYERS = {
-    "default": {
-        # This example app uses the Redis channel layer implementation channels_redis
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(redis_host, 6379)],
+if not redis_pass:
+    CHANNEL_LAYERS = {
+        "default": {
+            # This example app uses the Redis channel layer implementation channels_redis
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(redis_host, redis_port)],
+            },
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            # This example app uses the Redis channel layer implementation channels_redis
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [f'redis://:{redis_pass}@{redis_host}/0'],
+            },
+        },
+    }
+
 
 # ASGI_APPLICATION should be set to your outermost router
 ASGI_APPLICATION = 'multichat.routing.application'

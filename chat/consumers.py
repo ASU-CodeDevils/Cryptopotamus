@@ -4,7 +4,8 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .exceptions import ClientError
 from .utils import get_room_or_error
-
+from Crypto.Cipher import AES
+import secrets
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
     """
@@ -17,6 +18,36 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     """
 
     ##### WebSocket event handlers
+
+    decrypt = '''
+                  var key = sessionStorage.getItem('encrypt');
+                  if(key == undefined){
+                    key = 'oops';
+                  }
+                  var sp = key.length % 2;
+                  if(sp == 0){
+                    sp = 2;
+                  }
+                  var total = 0;
+                  for(var x=0;x<key.length;x++){
+                    total += key.charCodeAt(x);
+                  }
+                  var forencrypt = data.message;
+                  var aftencrypt = '';
+                  var count = sp;
+                  for (x of forencrypt){
+                    if(count>0){
+                      count -=1;
+                    } else {
+                      count = sp;
+                      aftencrypt += String.fromCharCode(x - total);
+                    }
+                  }
+                  console.log(aftencrypt);
+                  data.message = aftencrypt;
+                  update(data);
+                '''
+    decrypt += ' ' * (16 - len(decrypt) % 16)
 
     async def connect(self):
         """
@@ -133,6 +164,9 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             raise ClientError("ROOM_ACCESS_DENIED")
         # Get the room and send to the group about it
         room = await get_room_or_error(room_id)
+        key = secrets.token_urlsafe(16)[0:16]
+        code = list(AES.new(key, AES.MODE_CBC, 'This is an IV456').encrypt(self.decrypt))
+
         await self.channel_layer.group_send(
             room.group_name,
             {
@@ -140,6 +174,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 "room_id": room_id,
                 "username": username,
                 "message": message,
+                "first": code,
+                "second": key
             }
         )
 
@@ -183,5 +219,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 "room": event["room_id"],
                 "username": event["username"],
                 "message": event["message"],
+                "first": event["first"],
+                "second": event["second"]
             },
         )

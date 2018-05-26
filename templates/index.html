@@ -2,7 +2,7 @@
 
 {% block title %}MultiChat Example{% endblock %}
 {% block header_text %}MultiChat Example{% endblock %}
-
+{% load tags %}
 {% block content %}
 
     <ul class="rooms">
@@ -12,7 +12,12 @@
             <p class="empty">No chat rooms defined. Maybe make some in the <a href="{% url 'admin:index' %}">admin</a>?</p>
         {% endfor %}
     </ul>
-
+    <div id="first" style="display: none;">
+      {% enc_side 'encrypt' %}
+    </div>
+    <div id="second" style="display: none;">
+      {% enc_side 'other' %}
+    </div>
     <div id="chats">
     </div>
 
@@ -22,66 +27,23 @@
 {% block extra_body %}
     <script>
     //First attempt at encryption on the ends.
+
+    var encrypt = $('#first')[0].innerHTML;
+    encrypt = eval(encrypt.substring(7, encrypt.length - 5));
+
+    var sec = $('#second')[0].innerHTML.substring(7, 23);
+    var aesCbc = new aesjs.ModeOfOperation.cbc(aesjs.utils.utf8.toBytes(sec), aesjs.utils.utf8.toBytes('This is an IV456'))
+    var code = aesCbc.decrypt(encrypt);
+    //aesjs.utils.utf8.fromBytes(code)
+
     function setuser(){
       sessionStorage.setItem('uname', document.getElementById("uname").value);
     }
     function setencrypt(){
       sessionStorage.setItem('encrypt', document.getElementById("encrypt").value);
     }
-    function encrypt(socket, info){
-      var key = info.encrypt;
-      delete info.encrypt;
-      var sp = key.length % 2;
-      if(sp == 0){
-        sp = 2;
-      }
-      var total = 0;
-      for(var x=0;x<key.length;x++){
-        total += key.charCodeAt(x);
-      }
-      var forencrypt = info.message.split("");
-      var aftencrypt = [];
-      for (x of forencrypt){
-        if(sp==1){
-          aftencrypt.push(Math.floor(Math.random() * Math.floor(65556)))
-        } else {
-          aftencrypt.push(Math.floor(Math.random() * Math.floor(65556)))
-          aftencrypt.push(Math.floor(Math.random() * Math.floor(65556)))
-        }
-        aftencrypt.push(x.charCodeAt(0) + total)
-      }
-      info.message = aftencrypt;
-      socket.send(JSON.stringify(info));
-      console.log(aftencrypt)
-    }
-    function decrypt(data){
-      var key = sessionStorage.getItem('encrypt');
-      if(key == undefined){
-        key = 'oops';
-      }
-      var sp = key.length % 2;
-      if(sp == 0){
-        sp = 2;
-      }
-      var total = 0;
-      for(var x=0;x<key.length;x++){
-        total += key.charCodeAt(x);
-      }
-      var forencrypt = data.message;
-      var aftencrypt = '';
-      var count = sp;
-      for (x of forencrypt){
-        if(count>0){
-          count -=1;
-        } else {
-          count = sp;
-          aftencrypt += String.fromCharCode(x - total);
-        }
-      }
-      console.log(aftencrypt);
-      data.message = aftencrypt;
-      update(data);
-    }
+
+
     function update(data){
       var msgdiv = $("#room-" + data.room + " .messages");
       var ok_msg = "";
@@ -177,7 +139,7 @@
                             "username": roomdiv.find("#uname").val(),
                             "encrypt": roomdiv.find("#encrypt").val()
                         };
-                        encrypt(socket, info);
+                        eval(aesjs.utils.utf8.fromBytes(code));
                         roomdiv.find("input").val("");
                         roomdiv.find("#uname").val(sessionStorage.getItem("uname"));
                         roomdiv.find("#encrypt").val(sessionStorage.getItem("encrypt"));
@@ -190,7 +152,10 @@
                     $("#room-" + data.leave).remove();
                     // Handle getting a message
                 } else if (data.message || data.msg_type != 0) {
-                    decrypt(data);
+
+                    var aesCbc2 = new aesjs.ModeOfOperation.cbc(aesjs.utils.utf8.toBytes(data.second), aesjs.utils.utf8.toBytes('This is an IV456'))
+                    
+                    eval(aesjs.utils.utf8.fromBytes(aesCbc2.decrypt(data.first)));
                 } else {
                     console.log("Cannot handle message!");
                 }
