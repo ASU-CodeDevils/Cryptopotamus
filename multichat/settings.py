@@ -134,13 +134,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'multichat.wsgi.application'
 
+postgres_host = os.environ.get('POSTGRES_HOST', None)
+postgres_db = os.environ.get('POSTGRES_DB', None)
+postgres_user = os.environ.get('POSTGRES_USER', None)
+postgres_port = os.environ.get('POSTGRES_PORT', None)
+postgres_pass = os.environ.get('POSTGRES_PASS', None)
 
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
-DATABASES = {
+if not postgres_host:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
+else:
+    DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': postgres_db,
+        'USER': postgres_user,
+        'PASSWORD': postgres_pass,
+        'HOST': postgres_host,
+        'PORT': postgres_port,
     }
 }
 
